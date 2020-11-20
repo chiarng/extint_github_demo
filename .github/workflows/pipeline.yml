@@ -7,10 +7,9 @@ on:
       - master
 
 jobs:
-  build:
-    name: Build + Test
+  build_deploy:
+    name: CI/CD Pipeline
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
     
     steps:
 
@@ -26,7 +25,8 @@ jobs:
         id: publish_app
         uses: ServiceNow/sncicd-publish-app@1.0.0
         with:
-          versionFormat: autodetect
+          versionTemplate: 2.4
+          versionFormat: template
         env:
           snowUsername: ${{ secrets.SN_USERNAME }}
           snowPassword: ${{ secrets.SN_PASSWORD }}
@@ -64,16 +64,10 @@ jobs:
           snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
           appSysID: ${{ secrets.SN_APP_SYSID }}
 
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-    
-    steps:
-
       - name: ServiceNow CI/CD Install App
-        id: install_app
+        id: install_app_prod
         uses: ServiceNow/sncicd-install-app@1.0.0
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         with:
           version: ${{steps.publish_app.outputs.newVersion}}
         env:
