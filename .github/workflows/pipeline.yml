@@ -37,7 +37,7 @@ jobs:
         id: install_app
         uses: ServiceNow/sncicd-install-app@1.0.0
         with:
-          version: ${{jobs.steps.publish_app.outputs.newVersion}}
+          version: ${{steps.publish_app.outputs.newVersion}}
         env:
           snowUsername: ${{ secrets.SN_USERNAME }}
           snowPassword: ${{ secrets.SN_PASSWORD }}
