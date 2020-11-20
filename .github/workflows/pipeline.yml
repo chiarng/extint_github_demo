@@ -1,92 +1,90 @@
-name: ServiceNow
+name: ServiceNow GitHub Actions Demo
 
 on:
+  pull_request:
+    branches: [ $default-branch ]
   push:
     branches: [ master ]
 
 jobs:
   build:
-    name: CI/CD
+    name: Apply Remote Change and Publish
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Apply Changes
-        uses: <url to the repository with action> # like username/repo-name
-        env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowSourceInstance: ${{ secrets.SNOW_SOURCE_INSTANCE }}
-          appSysID: ${{ secrets.APP_SYS_ID }}
-          appScope: ${{ secrets.APP_SCOPE }}
 
-      - name: Publish Application
+      - name: ServiceNow CI/CD Apply Changes
+        uses: ServiceNow/sncicd-apply-changes@1.0.0
+        env:
+          snowUsername: ${{ secrets.SN_USERNAME }}
+          snowPassword: ${{ secrets.SN_PASSWORD }}
+          snowSourceInstance: ${{ secrets.SN_DEV_INSTANCE }}
+          appSysID: ${{ secrets.APP_SYS_ID }}
+
+      - name: ServiceNow CI/CD Publish App
         id: publish_app
-        uses: <url to the repository with action> # like username/repo-name
+        uses: ServiceNow/sncicd-publish-app@1.0.0
         with:
-          version: "x.x.x"
-          versionTemplate: "x.x"
-          devNotes: "string"
-          versionFormat: exact
+          versionFormat: detect
         env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowSourceInstance: ${{ secrets.SNOW_SOURCE_INSTANCE }}
-          appSysID: ${{ secrets.APP_SYS_ID }}
-          appScope: ${{ secrets.APP_SCOPE }}
+          snowUsername: ${{ secrets.SN_USERNAME }}
+          snowPassword: ${{ secrets.SN_PASSWORD }}
+          snowSourceInstance: ${{ secrets.SN_DEV_INSTANCE }}
+          appSysID: ${{ secrets.SN_APP_SYSID }}
 
-      - name: Install Application
+jobs:
+  test:
+    name: Install and Run CI Build Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+
+      - name: ServiceNow CI/CD Install App
         id: install_app
-        uses: <url to the repository with action> # like username/repo-name
+        uses: ServiceNow/sncicd-install-app@1.0.0
         with:
           version: ${{steps.publish_app.outputs.newVersion}}
         env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowInstallInstance: ${{ secrets.SNOW_INSTALL_INSTANCE }}
-          appSysID: ${{ secrets.APP_SYS_ID }}
-          appScope: ${{ secrets.APP_SCOPE }}
+          snowUsername: ${{ secrets.SN_USERNAME }}
+          snowPassword: ${{ secrets.SN_PASSWORD }}
+          snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
+          appSysID: ${{ secrets.SN_APP_SYSID }}
 
-      - name: Rollback Application
+      - name: ServiceNow CI/CD Run ATF Test Suite
+        uses: ServiceNow/sncicd-tests-run@1.0.0
+        with:
+          testSuiteSysId: ${{ secrets.SN_ATFTESTSUITE_SYSID }}
+        env:
+          snowUsername: ${{ secrets.SN_USERNAME }}
+          snowPassword: ${{ secrets.SN_PASSWORD }}
+          snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
+
+      - name: ServiceNow CI/CD Rollback App
         if: ${{ failure() && steps.install_app.outputs.rollbackVersion }}
-        uses: <url to the repository with action> # like username/repo-name
+        uses: ServiceNow/sncicd-rollback-app@1.0.0
         with:
           version: ${{steps.install_app.outputs.rollbackVersion}}
         env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowInstallInstance: ${{ secrets.SNOW_INSTALL_INSTANCE }}
-          appSysID: ${{ secrets.APP_SYS_ID }}
-          appScope: ${{ secrets.APP_SCOPE }}
+          snowUsername: ${{ secrets.SN_USERNAME }}
+          snowPassword: ${{ secrets.SN_PASSWORD }}
+          snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
+          appSysID: ${{ secrets.SN_APP_SYSID }}
 
-      - name: Activate Plugin
-        id: activate_plugin
-        uses: <url to the repository with action> # like username/repo-name
-        with:
-          pluginID:
-        env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowInstallInstance: ${{ secrets.SNOW_INSTALL_INSTANCE }}
+jobs:
+  deploy:
+    name: Deploy on Merge to Master
+    runs-on: ubuntu-latest
+    
+    steps:
 
-      - name: Rollback Plugin
-        if: ${{ failure() && steps.activate_plugin.outputs.failed }} # Runs if Activate Plugin step is failed
-        uses: <url to the repository with action> # like username/repo-name
+      - name: ServiceNow CI/CD Install App
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        id: install_app
+        uses: ServiceNow/sncicd-install-app@1.0.0
         with:
-          pluginID:
+          version: ${{steps.publish_app.outputs.newVersion}}
         env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowInstallInstance: ${{ secrets.SNOW_INSTALL_INSTANCE }}
-          
-      - name: Run Tests
-        uses: <url to the repository with action> # like username/repo-name
-        with:
-          browserName:
-          browserVersion:
-          osName:
-          osVersion:
-          testSuiteSysId:
-          testSuiteName:
-        env:
-          snowUsername: ${{ secrets.SNOW_USERNAME }}
-          snowPassword: ${{ secrets.SNOW_PASSWORD }}
-          snowInstallInstance: ${{ secrets.SNOW_INSTALL_INSTANCE }}
+          snowUsername: ${{ secrets.SN_USERNAME }}
+          snowPassword: ${{ secrets.SN_PASSWORD }}
+          snowInstallInstance: ${{ secrets.SN_PROD_INSTANCE }}
+          appSysID: ${{ secrets.SN_APP_SYSID }}
