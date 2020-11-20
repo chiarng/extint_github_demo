@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Apply Remote Change and Publish
+    name: Build + Test
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
     
@@ -33,19 +33,11 @@ jobs:
           snowSourceInstance: ${{ secrets.SN_DEV_INSTANCE }}
           appSysID: ${{ secrets.SN_APP_SYSID }}
 
-  test:
-    name: Install and Run CI Build Tests
-    runs-on: ubuntu-latest
-    needs: build
-    if: ${{ github.event_name == 'pull_request' }}
-    
-    steps:
-
       - name: ServiceNow CI/CD Install App
         id: install_app
         uses: ServiceNow/sncicd-install-app@1.0.0
         with:
-          version: ${{steps.publish_app.outputs.newVersion}}
+          version: ${{jobs.steps.publish_app.outputs.newVersion}}
         env:
           snowUsername: ${{ secrets.SN_USERNAME }}
           snowPassword: ${{ secrets.SN_PASSWORD }}
@@ -73,7 +65,7 @@ jobs:
           appSysID: ${{ secrets.SN_APP_SYSID }}
 
   deploy:
-    name: Deploy on Merge to Master
+    name: Deploy
     runs-on: ubuntu-latest
     needs: test
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
