@@ -32,7 +32,6 @@ jobs:
           snowSourceInstance: ${{ secrets.SN_DEV_INSTANCE }}
           appSysID: ${{ secrets.SN_APP_SYSID }}
 
-jobs:
   test:
     name: Install and Run CI Build Tests
     runs-on: ubuntu-latest
@@ -70,7 +69,6 @@ jobs:
           snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
           appSysID: ${{ secrets.SN_APP_SYSID }}
 
-jobs:
   deploy:
     name: Deploy on Merge to Master
     runs-on: ubuntu-latest
