@@ -2,9 +2,9 @@ name: ServiceNow GitHub Actions Demo
 
 on:
   pull_request:
-    branches: ${{ github.head_ref }}
   push:
-    branches: [ master ]
+    branches:
+      - master
 
 jobs:
   build:
