@@ -10,12 +10,12 @@ jobs:
   build:
     name: Publish from Dev
     runs-on: ubuntu-latest
+    # if: ${{ github.event_name == 'pull_request'}}
     
     steps:
 
       - name: ServiceNow CI/CD Apply Changes
         uses: ServiceNow/sncicd-apply-changes@1.0.0
-        if: ${{ github.event_name == 'pull_request'}}
         env:
           snowUsername: ${{ secrets.SN_USERNAME }}
           snowPassword: ${{ secrets.SN_PASSWORD }}
@@ -25,7 +25,6 @@ jobs:
       - name: ServiceNow CI/CD Publish App
         id: publish_app
         uses: ServiceNow/sncicd-publish-app@1.0.0
-        if: ${{ github.event_name == 'pull_request'}}
         with:
           versionTemplate: 2.4
           versionFormat: template
@@ -48,13 +47,13 @@ jobs:
     needs: build
     name: Run ATF in Test
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request'}}
     
     steps:
 
       - name: ServiceNow CI/CD Install App
         id: install_app
         uses: ServiceNow/sncicd-install-app@1.0.0
-        if: ${{ github.event_name == 'pull_request'}}
         with:
           version: ${{ needs.build.outputs.publishversion }}
         env:
@@ -65,7 +64,6 @@ jobs:
 
       - name: ServiceNow CI/CD Run ATF Test Suite
         uses: ServiceNow/sncicd-tests-run@1.0.0
-        if: ${{ github.event_name == 'pull_request'}}
         with:
           testSuiteSysId: ${{ secrets.SN_ATFTESTSUITE_SYSID }}
         env:
@@ -74,7 +72,7 @@ jobs:
           snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
 
       - name: ServiceNow CI/CD Rollback App
-        if: ${{ failure() && steps.install_app.outputs.rollbackVersion && github.event_name == 'pull_request' }}
+        if: ${{ failure() && steps.install_app.outputs.rollbackVersion }}
         uses: ServiceNow/sncicd-rollback-app@1.0.0
         with:
           version: ${{steps.install_app.outputs.rollbackVersion}}
@@ -88,12 +86,12 @@ jobs:
     needs: test
     name: Deploy to Prod
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     steps:
     
       - name: ServiceNow CI/CD Install App
         id: install_app_prod
         uses: ServiceNow/sncicd-install-app@1.0.0
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         with:
           version: ${{ needs.build.outputs.publishversion }}
         env:
