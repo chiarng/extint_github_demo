@@ -47,7 +47,7 @@ jobs:
     needs: build
     name: Run ATF in Test
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request'}}
+    # if: ${{ github.event_name == 'pull_request'}}
     
     steps:
 
