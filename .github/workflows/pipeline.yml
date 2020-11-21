@@ -82,6 +82,15 @@ jobs:
           snowInstallInstance: ${{ secrets.SN_TEST_INSTANCE }}
           appSysID: ${{ secrets.SN_APP_SYSID }}
 
+      - id: version
+        run: |
+          # use bash variable expression to get the substring
+          export PUBLISH_VERSION="${{ needs.build.outputs.publishversion }}"
+          echo "::set-output name=publishversion::${PUBLISH_VERSION}"
+
+    outputs:
+      publishversion: ${{ steps.version.outputs.publishversion }}
+
   deployprod:
     needs: test
     name: Deploy to Prod
@@ -93,7 +102,7 @@ jobs:
         id: install_app_prod
         uses: ServiceNow/sncicd-install-app@1.0.0
         with:
-          version: ${{ needs.build.outputs.publishversion }}
+          version: ${{ needs.test.outputs.publishversion }}
         env:
           snowUsername: ${{ secrets.SN_USERNAME }}
           snowPassword: ${{ secrets.SN_PASSWORD }}
